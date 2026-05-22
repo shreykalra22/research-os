@@ -1,5 +1,6 @@
 from backend.services.pdf_parser import PDFParser
 from backend.rag.chunking import TextChunker
+from backend.rag.embeddings import EmbeddingGenerator
 
 
 def main():
@@ -13,13 +14,28 @@ def main():
 
     chunks = chunker.chunk_documents(parsed_pages)
 
-    print("\nCHUNKING RESULT:\n")
+    embedding_generator = EmbeddingGenerator()
 
-    for chunk in chunks[:5]:
-        print(chunk)
+    embedded_chunks = embedding_generator.generate_embeddings(
+        chunks[:5]
+    )
+
+    print("\nEMBEDDING RESULT:\n")
+
+    for item in embedded_chunks[:2]:
+        print("CONTENT:")
+        print(item["content"][:200])
+
+        print("\nEMBEDDING VECTOR LENGTH:")
+        print(len(item["embedding"]))
+
+        print("\nPAGE:")
+        print(item["page_number"])
+
+        print("\nSOURCE:")
+        print(item["source"])
+
         print("\n" + "=" * 80 + "\n")
-
-    print(f"\nTotal chunks created: {len(chunks)}")
 
 
 if __name__ == "__main__":
