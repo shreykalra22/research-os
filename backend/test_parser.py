@@ -1,9 +1,11 @@
 from backend.services.pdf_parser import PDFParser
 from backend.rag.chunking import TextChunker
 from backend.rag.embeddings import EmbeddingGenerator
+from backend.rag.vector_store import VectorStore
 
 
 def main():
+
     parser = PDFParser()
 
     parsed_pages = parser.parse_pdf(
@@ -17,23 +19,43 @@ def main():
     embedding_generator = EmbeddingGenerator()
 
     embedded_chunks = embedding_generator.generate_embeddings(
-        chunks[:5]
+        chunks[:20]
     )
 
-    print("\nEMBEDDING RESULT:\n")
+    vector_store = VectorStore()
 
-    for item in embedded_chunks[:2]:
-        print("CONTENT:")
-        print(item["content"][:200])
+    vector_store.add_documents(
+        embedded_chunks
+    )
 
-        print("\nEMBEDDING VECTOR LENGTH:")
-        print(len(item["embedding"]))
+    print("\nDOCUMENTS STORED SUCCESSFULLY\n")
+
+    sample_query = "What is artificial intelligence?"
+
+    query_embedding = embedding_generator.model.encode(
+        sample_query
+    ).tolist()
+
+    results = vector_store.similarity_search(
+        query_embedding=query_embedding,
+        top_k=3,
+    )
+
+    print("\nSEMANTIC SEARCH RESULTS:\n")
+
+    for idx, document in enumerate(results["documents"][0]):
+
+        metadata = results["metadatas"][0][idx]
+
+        print(f"RESULT {idx + 1}")
+        print("\nCONTENT:")
+        print(document[:300])
 
         print("\nPAGE:")
-        print(item["page_number"])
+        print(metadata["page_number"])
 
         print("\nSOURCE:")
-        print(item["source"])
+        print(metadata["source"])
 
         print("\n" + "=" * 80 + "\n")
 
