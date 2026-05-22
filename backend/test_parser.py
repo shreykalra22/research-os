@@ -1,18 +1,25 @@
 from backend.services.pdf_parser import PDFParser
+from backend.rag.chunking import TextChunker
 
 
 def main():
     parser = PDFParser()
 
-    result = parser.parse_pdf(
+    parsed_pages = parser.parse_pdf(
         "data/sample_pdfs/AI notes.pdf"
     )
 
-    print("\nPDF PARSING RESULT:\n")
+    chunker = TextChunker()
 
-    for page in result[:2]:
-        print(page)
+    chunks = chunker.chunk_documents(parsed_pages)
+
+    print("\nCHUNKING RESULT:\n")
+
+    for chunk in chunks[:5]:
+        print(chunk)
         print("\n" + "=" * 80 + "\n")
+
+    print(f"\nTotal chunks created: {len(chunks)}")
 
 
 if __name__ == "__main__":
