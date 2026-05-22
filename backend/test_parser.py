@@ -2,6 +2,9 @@ from backend.services.pdf_parser import PDFParser
 from backend.rag.chunking import TextChunker
 from backend.rag.embeddings import EmbeddingGenerator
 from backend.rag.vector_store import VectorStore
+from backend.rag.retriever import Retriever
+from backend.rag.prompt_builder import PromptBuilder
+from backend.services.llm_service import LLMService
 
 
 def main():
@@ -19,7 +22,7 @@ def main():
     embedding_generator = EmbeddingGenerator()
 
     embedded_chunks = embedding_generator.generate_embeddings(
-        chunks[:20]
+        chunks[:50]
     )
 
     vector_store = VectorStore()
@@ -28,36 +31,43 @@ def main():
         embedded_chunks
     )
 
-    print("\nDOCUMENTS STORED SUCCESSFULLY\n")
+    retriever = Retriever()
 
-    sample_query = "What is artificial intelligence?"
+    query = "What is Artificial Intelligence?"
 
-    query_embedding = embedding_generator.model.encode(
-        sample_query
-    ).tolist()
+    retrieved_docs = retriever.retrieve(query)
 
-    results = vector_store.similarity_search(
-        query_embedding=query_embedding,
-        top_k=3,
+    retrieved_contents = [
+        doc["content"]
+        for doc in retrieved_docs
+    ]
+
+    prompt_builder = PromptBuilder()
+
+    prompt = prompt_builder.build_prompt(
+        query=query,
+        retrieved_chunks=retrieved_contents,
     )
 
-    print("\nSEMANTIC SEARCH RESULTS:\n")
+    llm_service = LLMService()
 
-    for idx, document in enumerate(results["documents"][0]):
+    response = llm_service.generate_response(
+        prompt
+    )
 
-        metadata = results["metadatas"][0][idx]
+    print("\nAI RESPONSE:\n")
 
-        print(f"RESULT {idx + 1}")
-        print("\nCONTENT:")
-        print(document[:300])
+    print(response)
 
-        print("\nPAGE:")
-        print(metadata["page_number"])
+    print("\n" + "=" * 80 + "\n")
 
-        print("\nSOURCE:")
-        print(metadata["source"])
+    print("SOURCES:\n")
 
-        print("\n" + "=" * 80 + "\n")
+    for doc in retrieved_docs:
+
+        print(
+            f"Page: {doc['page_number']} | Source: {doc['source']}"
+        )
 
 
 if __name__ == "__main__":
