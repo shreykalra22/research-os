@@ -1,7 +1,10 @@
-from typing import Dict, List
+from typing import Dict
+
+from backend.services.memory_service import MemoryService
 
 from backend.rag.retriever import Retriever
 from backend.rag.prompt_builder import PromptBuilder
+
 from backend.services.llm_service import LLMService
 
 from backend.utils.config import settings
@@ -18,6 +21,8 @@ class RetrievalService:
 
         self.llm_service = LLMService()
 
+        self.memory_service = MemoryService()
+
     # ====================================================
     # MAIN AI PIPELINE
     # ====================================================
@@ -25,11 +30,28 @@ class RetrievalService:
     def generate_answer(
         self,
         query: str,
+        session_id: str,
     ) -> Dict:
 
         app_logger.info(
             f"Starting retrieval pipeline for query: {query}"
         )
+
+        # ==========================================
+        # LOAD CONVERSATION MEMORY
+        # ==========================================
+
+        history = self.memory_service.get_history(
+            session_id
+        )
+
+        conversation_context = ""
+
+        for msg in history[-6:]:
+
+            conversation_context += (
+                f"{msg['role']}: {msg['content']}\n"
+            )
 
         # ==========================================
         # RETRIEVE RELEVANT DOCUMENTS
@@ -56,6 +78,7 @@ class RetrievalService:
         prompt = self.prompt_builder.build_prompt(
             query=query,
             retrieved_chunks=retrieved_contents,
+            conversation_history=conversation_context,
         )
 
         app_logger.info(
@@ -72,6 +95,22 @@ class RetrievalService:
 
         app_logger.info(
             "LLM response generated successfully"
+        )
+
+        # ==========================================
+        # STORE MEMORY
+        # ==========================================
+
+        self.memory_service.add_message(
+            session_id,
+            "user",
+            query,
+        )
+
+        self.memory_service.add_message(
+            session_id,
+            "assistant",
+            answer,
         )
 
         # ==========================================
@@ -97,4 +136,5 @@ class RetrievalService:
             "query": query,
             "answer": answer,
             "sources": sources,
+            "session_id": session_id,
         }

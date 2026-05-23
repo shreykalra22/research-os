@@ -80,44 +80,80 @@ class DocumentDeleteResponse(BaseModel):
 # ── Chat / Retrieval ──────────────────────────────────────────
 
 class ChatRequest(BaseModel):
+
     query: str = Field(
         ...,
         min_length=3,
         max_length=2000,
         description="Natural language question to ask about uploaded documents",
     )
+
+    session_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Conversation session identifier",
+    )
+
     document_id: Optional[str] = Field(
         default=None,
         description="Restrict search to a specific document. Omit to search all.",
     )
+
     top_k: int = Field(
         default=5,
         ge=1,
         le=20,
         description="Number of source chunks to retrieve",
     )
+
     conversation_history: list[dict] = Field(
         default_factory=list,
         description="Prior turns: [{'role': 'user'|'assistant', 'content': '...'}]",
-        max_length=10,  # prevent context explosion
+        max_length=10,
     )
 
     @field_validator("query")
     @classmethod
     def question_not_blank(cls, v: str) -> str:
+
         if not v.strip():
-            raise ValueError("Query must not be blank")
+
+            raise ValueError(
+                "Query must not be blank"
+            )
+
         return v.strip()
 
     @field_validator("conversation_history")
     @classmethod
-    def validate_history_roles(cls, v: list[dict]) -> list[dict]:
-        allowed_roles = {"user", "assistant"}
+    def validate_history_roles(
+        cls,
+        v: list[dict],
+    ) -> list[dict]:
+
+        allowed_roles = {
+            "user",
+            "assistant",
+        }
+
         for turn in v:
+
             if turn.get("role") not in allowed_roles:
-                raise ValueError(f"history role must be one of {allowed_roles}")
-            if not turn.get("content", "").strip():
-                raise ValueError("history content must not be blank")
+
+                raise ValueError(
+                    f"history role must be one of {allowed_roles}"
+                )
+
+            if not turn.get(
+                "content",
+                "",
+            ).strip():
+
+                raise ValueError(
+                    "history content must not be blank"
+                )
+
         return v
 
 

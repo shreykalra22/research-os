@@ -42,8 +42,9 @@ def chat(
     try:
 
         result = retrieval_service.generate_answer(
-            chat_request.query
-        )
+            query=chat_request.query,
+            session_id=chat_request.session_id,
+)
 
     except Exception as e:
 
