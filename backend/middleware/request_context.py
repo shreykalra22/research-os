@@ -41,7 +41,8 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         # Generate or forward request ID (forwarded from upstream load balancer)
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
         request_id_var.set(request_id)
-
+        request.state.request_id = request_id
+        
         start = time.perf_counter()
 
         # Bind to logger context for this request

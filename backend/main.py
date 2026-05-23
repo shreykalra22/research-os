@@ -1,37 +1,52 @@
+from backend.api.routes.upload import router as upload_router
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+
+from backend.api.routes.health import router as health_router
+
+from backend.middleware.request_context import (
+    RequestContextMiddleware,
+)
 
 from backend.utils.config import settings
 from backend.utils.logger import app_logger
+
 
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
 )
 
+# ====================================================
+# MIDDLEWARE
+# ====================================================
+
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    RequestContextMiddleware
 )
 
+# ====================================================
+# ROUTERS
+# ====================================================
+
+app.include_router(
+    health_router,
+    prefix=settings.API_V1_PREFIX,
+)
+app.include_router(
+    upload_router,
+    prefix=settings.API_V1_PREFIX,
+)
+
+# ====================================================
+# ROOT ENDPOINT
+# ====================================================
 
 @app.get("/")
-async def root():
-    app_logger.info("Root endpoint accessed")
+def root():
 
     return {
-        "message": "ResearchOS Backend Running"
+        "message": "ResearchOS API Running"
     }
 
 
-@app.get("/health")
-async def health_check():
-    app_logger.info("Health check endpoint called")
-
-    return {
-        "status": "healthy",
-        "version": settings.APP_VERSION
-    }
+app_logger.info("FastAPI application initialized")
