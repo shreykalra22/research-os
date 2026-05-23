@@ -1,3 +1,4 @@
+from backend.api.routes.chat import router as chat_router
 from backend.api.routes.upload import router as upload_router
 from fastapi import FastAPI
 
@@ -34,6 +35,11 @@ app.include_router(
 )
 app.include_router(
     upload_router,
+    prefix=settings.API_V1_PREFIX,
+)
+
+app.include_router(
+    chat_router,
     prefix=settings.API_V1_PREFIX,
 )
 

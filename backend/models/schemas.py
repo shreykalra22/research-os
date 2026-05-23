@@ -80,7 +80,7 @@ class DocumentDeleteResponse(BaseModel):
 # ── Chat / Retrieval ──────────────────────────────────────────
 
 class ChatRequest(BaseModel):
-    question: str = Field(
+    query: str = Field(
         ...,
         min_length=3,
         max_length=2000,
@@ -102,11 +102,11 @@ class ChatRequest(BaseModel):
         max_length=10,  # prevent context explosion
     )
 
-    @field_validator("question")
+    @field_validator("query")
     @classmethod
     def question_not_blank(cls, v: str) -> str:
         if not v.strip():
-            raise ValueError("Question must not be blank")
+            raise ValueError("Query must not be blank")
         return v.strip()
 
     @field_validator("conversation_history")
