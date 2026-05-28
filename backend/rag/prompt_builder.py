@@ -42,7 +42,12 @@ say:
 "I could not find the answer in the provided documents."
 
 Be concise, accurate, and professional.
-
+IMPORTANT:
+- Format answers using markdown.
+- Use bullet points whenever possible.
+- Use headings for sections.
+- Keep spacing clean and readable.
+- Do not write huge paragraphs.
 ==============================
 CONVERSATION HISTORY
 ==============================

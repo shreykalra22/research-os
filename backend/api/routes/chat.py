@@ -26,7 +26,7 @@ router = APIRouter(
 )
 
 
-@router.post("")
+@router.post("/")
 def chat(
     request: Request,
     chat_request: ChatRequest,
@@ -44,7 +44,7 @@ def chat(
         result = retrieval_service.generate_answer(
             query=chat_request.query,
             session_id=chat_request.session_id,
-)
+        )
 
     except Exception as e:
 

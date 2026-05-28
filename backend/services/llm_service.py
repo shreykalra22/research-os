@@ -5,16 +5,25 @@ from backend.utils.logger import app_logger
 
 
 class LLMService:
+
     def __init__(self):
+
         self.base_url = settings.OLLAMA_BASE_URL
+
         self.model = settings.OLLAMA_MODEL
+
+    # ====================================================
+    # NORMAL RESPONSE
+    # ====================================================
 
     def generate_response(
         self,
         prompt: str,
     ) -> str:
 
-        app_logger.info("Sending request to Ollama")
+        app_logger.info(
+            "Sending request to Ollama"
+        )
 
         response = requests.post(
             f"{self.base_url}/api/generate",
@@ -27,6 +36,35 @@ class LLMService:
 
         result = response.json()
 
-        app_logger.info("LLM response generated")
+        app_logger.info(
+            "LLM response generated"
+        )
 
         return result["response"]
+
+    # ====================================================
+    # STREAM RESPONSE
+    # ====================================================
+
+    def stream_response(
+        self,
+        prompt: str,
+    ):
+
+        response = requests.post(
+            f"{self.base_url}/api/generate",
+            json={
+                "model": self.model,
+                "prompt": prompt,
+                "stream": True,
+            },
+            stream=True,
+        )
+
+        for line in response.iter_lines():
+
+            if line:
+
+                chunk = line.decode("utf-8")
+
+                yield chunk
