@@ -216,3 +216,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# ChromaDB
+chroma_db/
+
+# Uploaded PDFs
+data/uploads/
+
+# Frontend
+researchos-frontend/node_modules/
+researchos-frontend/dist/
