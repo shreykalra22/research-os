@@ -20,7 +20,7 @@ class RetrievalService:
         self.llm_service = LLMService()
 
     # ====================================================
-    # MAIN AI PIPELINE
+    # NORMAL RESPONSE
     # ====================================================
 
     def generate_answer(
@@ -29,26 +29,10 @@ class RetrievalService:
         session_id: str,
     ) -> Dict:
 
-        app_logger.info(
-            f"Starting retrieval pipeline for query: {query}"
-        )
-
-        # ==========================================
-        # RETRIEVE RELEVANT DOCUMENTS
-        # ==========================================
-
         retrieved_docs = self.retriever.retrieve(
             query=query,
             top_k=settings.TOP_K_RESULTS,
         )
-
-        app_logger.info(
-            f"Retrieved {len(retrieved_docs)} documents"
-        )
-
-        # ==========================================
-        # BUILD CONTEXT
-        # ==========================================
 
         retrieved_contents = [
             doc["content"]
@@ -61,25 +45,9 @@ class RetrievalService:
             conversation_history="",
         )
 
-        app_logger.info(
-            "Prompt constructed successfully"
-        )
-
-        # ==========================================
-        # QUERY LLM
-        # ==========================================
-
         answer = self.llm_service.generate_response(
             prompt
         )
-
-        app_logger.info(
-            "LLM response generated successfully"
-        )
-
-        # ==========================================
-        # FORMAT SOURCES
-        # ==========================================
 
         sources = []
 
@@ -92,13 +60,39 @@ class RetrievalService:
                 }
             )
 
-        # ==========================================
-        # RETURN STRUCTURED RESPONSE
-        # ==========================================
-
         return {
             "query": query,
             "answer": answer,
             "sources": sources,
             "session_id": session_id,
         }
+
+    # ====================================================
+    # STREAMING RESPONSE
+    # ====================================================
+
+    def stream_answer(
+        self,
+        query: str,
+        session_id: str,
+    ):
+
+        retrieved_docs = self.retriever.retrieve(
+            query=query,
+            top_k=settings.TOP_K_RESULTS,
+        )
+
+        retrieved_contents = [
+            doc["content"]
+            for doc in retrieved_docs
+        ]
+
+        prompt = self.prompt_builder.build_prompt(
+            query=query,
+            retrieved_chunks=retrieved_contents,
+            conversation_history="",
+        )
+
+        return self.llm_service.stream_response(
+            prompt
+        )

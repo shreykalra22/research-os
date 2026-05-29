@@ -1,3 +1,4 @@
+import json
 import requests
 
 from backend.utils.config import settings
@@ -51,6 +52,10 @@ class LLMService:
         prompt: str,
     ):
 
+        app_logger.info(
+            "Starting streaming response"
+        )
+
         response = requests.post(
             f"{self.base_url}/api/generate",
             json={
@@ -63,8 +68,27 @@ class LLMService:
 
         for line in response.iter_lines():
 
-            if line:
+            if not line:
+                continue
 
-                chunk = line.decode("utf-8")
+            try:
 
-                yield chunk
+                data = json.loads(
+                    line.decode("utf-8")
+                )
+
+                token = data.get(
+                    "response",
+                    ""
+                )
+
+                if token:
+                    yield token
+
+            except Exception as e:
+
+                app_logger.error(
+                    f"Streaming parse error: {str(e)}"
+                )
+
+                continue

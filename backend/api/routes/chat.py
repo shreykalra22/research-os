@@ -1,3 +1,6 @@
+from sse_starlette.sse import EventSourceResponse
+import json
+
 from fastapi import (
     APIRouter,
     Depends,
@@ -25,6 +28,10 @@ router = APIRouter(
     tags=["Chat"],
 )
 
+
+# ====================================================
+# NORMAL CHAT
+# ====================================================
 
 @router.post("/")
 def chat(
@@ -62,4 +69,58 @@ def chat(
         message="Chat response generated successfully",
         request_id=request.state.request_id,
         data=result,
+    )
+
+
+# ====================================================
+# STREAMING CHAT
+# ====================================================
+
+@router.post("/stream")
+async def stream_chat(
+    chat_request: ChatRequest,
+    retrieval_service: RetrievalService = Depends(
+        get_retrieval_service
+    ),
+):
+
+    async def event_generator():
+
+        try:
+
+            app_logger.info(
+                f"Streaming chat request: {chat_request.query}"
+            )
+
+            for token in retrieval_service.stream_answer(
+                query=chat_request.query,
+                session_id=chat_request.session_id,
+            ):
+
+                yield {
+                    "event": "message",
+                    "data": json.dumps(
+                        {
+                            "token": token
+                        }
+                    ),
+                }
+
+        except Exception as e:
+
+            app_logger.error(
+                f"Streaming failed: {str(e)}"
+            )
+
+            yield {
+                "event": "error",
+                "data": json.dumps(
+                    {
+                        "error": str(e)
+                    }
+                ),
+            }
+
+    return EventSourceResponse(
+        event_generator()
     )
