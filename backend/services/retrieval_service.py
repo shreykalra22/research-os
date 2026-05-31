@@ -4,7 +4,7 @@ from backend.rag.retriever import Retriever
 from backend.rag.prompt_builder import PromptBuilder
 
 from backend.services.llm_service import LLMService
-from backend.services.memory_service import MemoryService
+from backend.services.chat_db_service import ChatDBService
 
 from backend.utils.config import settings
 from backend.utils.logger import app_logger
@@ -20,7 +20,7 @@ class RetrievalService:
 
         self.llm_service = LLMService()
 
-        self.memory_service = MemoryService()
+        self.chat_db = ChatDBService()
 
     # ====================================================
     # NORMAL RESPONSE
@@ -37,16 +37,16 @@ class RetrievalService:
         )
 
         # ==========================================
-        # LOAD CONVERSATION HISTORY
+        # LOAD CHAT HISTORY FROM SQLITE
         # ==========================================
 
-        history = self.memory_service.get_history(
+        history = self.chat_db.get_history(
             session_id
         )
 
         conversation_context = ""
 
-        for msg in history[-6:]:
+        for msg in history[-10:]:
 
             conversation_context += (
                 f"{msg['role']}: {msg['content']}\n"
@@ -85,16 +85,16 @@ class RetrievalService:
         )
 
         # ==========================================
-        # STORE MEMORY
+        # SAVE TO SQLITE
         # ==========================================
 
-        self.memory_service.add_message(
+        self.chat_db.add_message(
             session_id,
             "user",
             query,
         )
 
-        self.memory_service.add_message(
+        self.chat_db.add_message(
             session_id,
             "assistant",
             answer,
@@ -132,13 +132,13 @@ class RetrievalService:
         session_id: str,
     ):
 
-        history = self.memory_service.get_history(
+        history = self.chat_db.get_history(
             session_id
         )
 
         conversation_context = ""
 
-        for msg in history[-6:]:
+        for msg in history[-10:]:
 
             conversation_context += (
                 f"{msg['role']}: {msg['content']}\n"
