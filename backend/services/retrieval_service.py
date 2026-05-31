@@ -4,6 +4,7 @@ from backend.rag.retriever import Retriever
 from backend.rag.prompt_builder import PromptBuilder
 
 from backend.services.llm_service import LLMService
+from backend.services.memory_service import MemoryService
 
 from backend.utils.config import settings
 from backend.utils.logger import app_logger
@@ -19,6 +20,8 @@ class RetrievalService:
 
         self.llm_service = LLMService()
 
+        self.memory_service = MemoryService()
+
     # ====================================================
     # NORMAL RESPONSE
     # ====================================================
@@ -28,6 +31,30 @@ class RetrievalService:
         query: str,
         session_id: str,
     ) -> Dict:
+
+        app_logger.info(
+            f"Starting retrieval pipeline for query: {query}"
+        )
+
+        # ==========================================
+        # LOAD CONVERSATION HISTORY
+        # ==========================================
+
+        history = self.memory_service.get_history(
+            session_id
+        )
+
+        conversation_context = ""
+
+        for msg in history[-6:]:
+
+            conversation_context += (
+                f"{msg['role']}: {msg['content']}\n"
+            )
+
+        # ==========================================
+        # RETRIEVE DOCUMENTS
+        # ==========================================
 
         retrieved_docs = self.retriever.retrieve(
             query=query,
@@ -39,15 +66,43 @@ class RetrievalService:
             for doc in retrieved_docs
         ]
 
+        # ==========================================
+        # BUILD PROMPT
+        # ==========================================
+
         prompt = self.prompt_builder.build_prompt(
             query=query,
             retrieved_chunks=retrieved_contents,
-            conversation_history="",
+            conversation_history=conversation_context,
         )
+
+        # ==========================================
+        # GENERATE ANSWER
+        # ==========================================
 
         answer = self.llm_service.generate_response(
             prompt
         )
+
+        # ==========================================
+        # STORE MEMORY
+        # ==========================================
+
+        self.memory_service.add_message(
+            session_id,
+            "user",
+            query,
+        )
+
+        self.memory_service.add_message(
+            session_id,
+            "assistant",
+            answer,
+        )
+
+        # ==========================================
+        # SOURCES
+        # ==========================================
 
         sources = []
 
@@ -77,6 +132,18 @@ class RetrievalService:
         session_id: str,
     ):
 
+        history = self.memory_service.get_history(
+            session_id
+        )
+
+        conversation_context = ""
+
+        for msg in history[-6:]:
+
+            conversation_context += (
+                f"{msg['role']}: {msg['content']}\n"
+            )
+
         retrieved_docs = self.retriever.retrieve(
             query=query,
             top_k=settings.TOP_K_RESULTS,
@@ -90,7 +157,7 @@ class RetrievalService:
         prompt = self.prompt_builder.build_prompt(
             query=query,
             retrieved_chunks=retrieved_contents,
-            conversation_history="",
+            conversation_history=conversation_context,
         )
 
         return self.llm_service.stream_response(
